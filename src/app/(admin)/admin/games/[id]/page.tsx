@@ -232,7 +232,7 @@ export default function GameDetailPage() {
 
   // Lista płacących do modala — z dowolnego źródła
   const allPayingPlayers: { id: string; name: string; balance: number; source: string }[] = [];
-  for (const userId of payingIds) {
+  for (const userId of Array.from(payingIds)) {
     // Najpierw szukaj w signupach
     const signup = game.signups.find((s) => s.user.id === userId);
     if (signup) {
