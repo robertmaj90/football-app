@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+enum GameStatus {
+  OPEN
+  LOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendStatus {
+  UNKNOWN
+  PRESENT
+  ABSENT
+}
+
+enum PaymentType {
+  DEPOSIT
+  GAME_CHARGE
+  REFUND
+  ADJUSTMENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  phone        String
+  passwordHash String
+  roles        Role[]   @default([PLAYER])
+  isActive     Boolean  @default(true)
+  balance      Int      @default(0) // w groszach: 5000 = 50.00 PLN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  signups  GameSignup[]
+  payments Payment[]
+}
+
+model GameSchedule {
+  id           String   @id @default(cuid())
+  name         String // np. "Środowa piłka"
+  dayOfWeek    Int // 0=Nd, 1=Pn, 2=Wt, 3=Śr, 4=Czw, 5=Pt, 6=Sb
+  time         String // "20:00"
+  location     String
+  maxPlayers   Int      @default(14)
+  pricePerGame Int // w groszach
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  games Game[]
+}
+
+model Game {
+  id           String       @id @default(cuid())
+  scheduleId   String
+  schedule     GameSchedule @relation(fields: [scheduleId], references: [id])
+  date         DateTime
+  maxPlayers   Int
+  pricePerGame Int
+  status       GameStatus   @default(OPEN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  signups GameSignup[]
+}
+
+model GameSignup {
+  id        String       @id @default(cuid())
+  gameId    String
+  game      Game         @relation(fields: [gameId], references: [id])
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  position  Int
+  isReserve Boolean      @default(false)
+  attended  AttendStatus @default(UNKNOWN)
+  charged   Boolean      @default(false)
+  createdAt DateTime     @default(now())
+
+  @@unique([gameId, userId])
+}
+
+model Payment {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  amount      Int // w groszach: + wpłata, - obciążenie
+  type        PaymentType
+  description String?
+  gameId      String?
+  createdBy   String
+  createdAt   DateTime    @default(now())
+}
