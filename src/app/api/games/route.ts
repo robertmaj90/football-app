@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/games - lista grań
+// GET /api/games - lista gierek
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(games);
 }
 
-// POST /api/games - utwórz granie z harmonogramu
+// POST /api/games - utwórz gierkę z harmonogramu
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user.roles?.includes("ADMIN")) {

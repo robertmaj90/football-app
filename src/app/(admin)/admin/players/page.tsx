@@ -372,7 +372,7 @@ export default function PlayersPage() {
                   type="text"
                   placeholder={
                     depositType === "REFUND"
-                      ? "np. Zwrot za odwołane granie"
+                      ? "np. Zwrot za odwołaną gierkę"
                       : "np. Przelew, Gotówka"
                   }
                   value={depositDesc}

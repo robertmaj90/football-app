@@ -70,6 +70,7 @@ model Game {
   maxPlayers   Int
   pricePerGame Int
   status       GameStatus   @default(OPEN)
+  venuePaid    Boolean      @default(false) // czy opłata za boisko została zapłacona na zewnątrz
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 

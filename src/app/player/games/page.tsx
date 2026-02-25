@@ -41,7 +41,7 @@ export default function MyGamesPage() {
 
   const typeLabels: Record<string, string> = {
     DEPOSIT: "💰 Wpłata",
-    GAME_CHARGE: "⚽ Opłata za granie",
+    GAME_CHARGE: "⚽ Opłata za gierkę",
     REFUND: "↩️ Zwrot",
     ADJUSTMENT: "📝 Korekta",
   };

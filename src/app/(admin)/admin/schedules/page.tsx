@@ -173,7 +173,7 @@ export default function SchedulesPage() {
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Koszt grania (PLN)"
+                  placeholder="Koszt gierki (PLN)"
                   value={form.pricePerGame}
                   onChange={(e) =>
                     setForm({ ...form, pricePerGame: e.target.value })
@@ -188,8 +188,8 @@ export default function SchedulesPage() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              Koszt grania = łączna kwota za wynajem boiska. Cena per gracz
-              zostanie wyliczona automatycznie na ekranie grania.
+              Koszt gierki = łączna kwota za wynajem boiska. Cena per gracz
+              zostanie wyliczona automatycznie na ekranie gierki.
             </p>
             <button
               type="submit"
@@ -244,11 +244,11 @@ export default function SchedulesPage() {
                 <div>📍 {s.location}</div>
                 <div>
                   👥 Max {s.maxPlayers} graczy • 💰{" "}
-                  {formatMoney(s.pricePerGame)} za granie
+                  {formatMoney(s.pricePerGame)} za gierkę
                 </div>
                 <div className="text-xs text-gray-400">
                   ~{formatMoney(Math.round(s.pricePerGame / s.maxPlayers))}
-                  /gracz przy pełnym składzie • {s._count.games} grań
+                  /gracz przy pełnym składzie • {s._count.games} gierek
                 </div>
               </div>
             </div>

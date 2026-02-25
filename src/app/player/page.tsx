@@ -55,7 +55,7 @@ type Tab = "upcoming" | "history" | "balance";
 
 const typeLabels: Record<string, string> = {
   DEPOSIT: "💰 Wpłata",
-  GAME_CHARGE: "⚽ Opłata za granie",
+  GAME_CHARGE: "⚽ Opłata za gierkę",
   REFUND: "↩️ Zwrot",
   ADJUSTMENT: "📝 Korekta",
 };
@@ -169,7 +169,7 @@ export default function PlayerDashboard() {
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
         {(
           [
-            { key: "upcoming", label: `⚽ Grania (${upcomingGames.length})` },
+            { key: "upcoming", label: `⚽ Gierki (${upcomingGames.length})` },
             { key: "history", label: `📋 Historia (${pastGames.length})` },
             { key: "balance", label: `💰 Bilans (${payments.length})` },
           ] as { key: Tab; label: string }[]
@@ -218,7 +218,7 @@ function UpcomingTab({
   if (games.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border p-8 text-center text-gray-500">
-        Brak nadchodzących grań
+        Brak nadchodzących gierek
       </div>
     );
   }
@@ -345,7 +345,7 @@ function HistoryTab({ games }: { games: PlayerGame[] }) {
   if (games.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border p-8 text-center text-gray-500">
-        Brak historii grań
+        Brak historii gierek
       </div>
     );
   }
@@ -398,7 +398,7 @@ function HistoryTab({ games }: { games: PlayerGame[] }) {
 
               {g.status === "CANCELLED" && (
                 <div className="mt-2 text-xs text-gray-400">
-                  Granie odwołane
+                  Gierka odwołana
                 </div>
               )}
             </div>

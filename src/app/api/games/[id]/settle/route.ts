@@ -3,14 +3,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/games/:id/settle - rozlicz granie
+// POST /api/games/:id/settle - rozlicz gierkę
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user.roles?.includes("ADMIN")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const payingUserIds: string[] = body.payingUserIds || [];
+
+  if (payingUserIds.length === 0) {
+    return NextResponse.json(
+      { error: "Brak graczy do rozliczenia." },
+      { status: 400 }
+    );
   }
 
   const game = await prisma.game.findUnique({
@@ -22,49 +32,48 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Znajdź wszystkich którzy mają być obciążeni:
-  // PRESENT lub ABSENT (nie UNKNOWN) i jeszcze nie charged i nie są na liście rezerwowej
-  const toCharge = game.signups.filter(
-    (s) =>
-      !s.charged &&
-      (s.attended === "PRESENT" || s.attended === "ABSENT") &&
-      !s.isReserve
+  // Rozdziel koszt równo, reszta groszy trafia do pierwszych N graczy
+  const count = payingUserIds.length;
+  const baseAmount = Math.floor(game.pricePerGame / count);
+  const remainder = game.pricePerGame - baseAmount * count; // ile groszy ekstra (0..count-1)
+
+  // Mapuj signupId po userId dla tych co mają signup
+  const signupByUserId = new Map(
+    game.signups.map((s) => [s.userId, s])
   );
 
-  if (toCharge.length === 0) {
-    return NextResponse.json(
-      { error: "Brak graczy do rozliczenia. Zaznacz obecność." },
-      { status: 400 }
-    );
-  }
-
-  // pricePerGame = koszt całego grania (np. wynajem boiska)
-  // dzielimy przez liczbę graczy do obciążenia
-  const perPlayerAmount = Math.round(game.pricePerGame / toCharge.length);
-  const chargeAmount = -perPlayerAmount; // ujemna kwota = obciążenie
-
   await prisma.$transaction(async (tx) => {
-    for (const signup of toCharge) {
+    for (let i = 0; i < payingUserIds.length; i++) {
+      const userId = payingUserIds[i];
+      const perPlayer = baseAmount + (i < remainder ? 1 : 0);
+      const chargeAmount = -perPlayer;
+
+      // Utwórz płatność dla każdego
       await tx.payment.create({
         data: {
-          userId: signup.userId,
+          userId,
           amount: chargeAmount,
           type: "GAME_CHARGE",
-          description: `Granie ${new Date(game.date).toLocaleDateString("pl-PL")} - ${game.schedule.name} (${toCharge.length} graczy)`,
+          description: `Gierka ${new Date(game.date).toLocaleDateString("pl-PL")} - ${game.schedule.name} (${count} graczy)`,
           gameId: game.id,
           createdBy: session.user.id,
         },
       });
 
+      // Obciąż bilans
       await tx.user.update({
-        where: { id: signup.userId },
+        where: { id: userId },
         data: { balance: { increment: chargeAmount } },
       });
 
-      await tx.gameSignup.update({
-        where: { id: signup.id },
-        data: { charged: true },
-      });
+      // Oznacz signup jako rozliczony (jeśli gracz jest zapisany)
+      const signup = signupByUserId.get(userId);
+      if (signup) {
+        await tx.gameSignup.update({
+          where: { id: signup.id },
+          data: { charged: true },
+        });
+      }
     }
 
     await tx.game.update({
@@ -74,8 +83,8 @@ export async function POST(
   });
 
   return NextResponse.json({
-    charged: toCharge.length,
+    charged: payingUserIds.length,
     totalCost: game.pricePerGame,
-    perPlayer: perPlayerAmount,
+    perPlayer: baseAmount,
   });
 }

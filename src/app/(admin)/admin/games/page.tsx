@@ -136,12 +136,12 @@ export default function GamesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Grania</h1>
+        <h1 className="text-2xl font-bold">Gierki</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
         >
-          {showForm ? "Anuluj" : "+ Nowe granie"}
+          {showForm ? "Anuluj" : "+ Nowe gierkę"}
         </button>
       </div>
 
@@ -181,7 +181,7 @@ export default function GamesPage() {
 
       {showForm && (
         <div className="bg-white rounded-xl shadow-sm border p-5">
-          <h2 className="font-semibold mb-4">Utwórz granie</h2>
+          <h2 className="font-semibold mb-4">Utwórz gierkę</h2>
           <form onSubmit={handleCreate} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select
@@ -214,7 +214,7 @@ export default function GamesPage() {
               type="submit"
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
             >
-              Utwórz granie
+              Utwórz gierkę
             </button>
           </form>
         </div>
@@ -226,8 +226,8 @@ export default function GamesPage() {
         ) : filteredGames.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             {games.length === 0
-              ? "Brak grań. Utwórz pierwsze granie."
-              : "Brak grań dla wybranych statusów."}
+              ? "Brak gierek. Utwórz pierwszą gierkę."
+              : "Brak gierek dla wybranych statusów."}
           </div>
         ) : (
           <div className="divide-y">

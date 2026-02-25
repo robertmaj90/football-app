@@ -62,7 +62,7 @@ type PlayerTab = "upcoming" | "history" | "balance";
 
 const typeLabels: Record<string, string> = {
   DEPOSIT: "💰 Wpłata",
-  GAME_CHARGE: "⚽ Opłata za granie",
+  GAME_CHARGE: "⚽ Opłata za gierkę",
   REFUND: "↩️ Zwrot",
   ADJUSTMENT: "📝 Korekta",
 };
@@ -155,9 +155,37 @@ export default function AdminDashboard() {
     (g) => g.attended === "PRESENT"
   ).length;
 
+  const userName = session?.user?.name || "Użytkowniku";
+  const userRoles = (session?.user as any)?.roles as string[] || [];
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Dzień dobry" : hour < 18 ? "Cześć" : "Dobry wieczór";
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      {/* Powitanie */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {greeting}, {userName.split(" ")[0]}!
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Witaj w panelu zarządzania gierkami
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {userRoles.includes("ADMIN") && (
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+              🛠️ Admin
+            </span>
+          )}
+          {userRoles.includes("PLAYER") && (
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+              ⚽ Gracz
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Główne zakładki: Admin / Gracz */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
@@ -199,41 +227,16 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className="bg-white rounded-xl p-4 shadow-sm border">
-              <div className="text-xs text-gray-500">Nadchodzące grania</div>
+              <div className="text-xs text-gray-500">Nadchodzące gierki</div>
               <div className="text-xl font-bold mt-0.5">{upcomingGames.length}</div>
             </div>
           </div>
 
-          {/* Ujemne bilanse alert */}
-          {stats.lowBalancePlayers.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="px-5 py-3 border-b bg-red-50">
-                <h2 className="font-semibold text-red-800 text-sm">
-                  ⚠️ Gracze z ujemnym bilansem
-                </h2>
-              </div>
-              <div className="divide-y">
-                {stats.lowBalancePlayers.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/admin/players/${p.id}`}
-                    className="flex items-center justify-between px-5 py-2.5 hover:bg-gray-50"
-                  >
-                    <span className="font-medium text-sm">{p.name}</span>
-                    <span className="text-red-600 font-semibold text-sm">
-                      {formatMoney(p.balance)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Nadchodzące grania - skrót */}
+          {/* Nadchodzące gierki - skrót */}
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
             <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
               <h2 className="font-semibold text-gray-700 text-sm">
-                📅 Nadchodzące grania
+                📅 Nadchodzące gierki
               </h2>
               <Link
                 href="/admin/games"
@@ -244,7 +247,7 @@ export default function AdminDashboard() {
             </div>
             {upcomingGames.length === 0 ? (
               <div className="p-6 text-center text-gray-400 text-sm">
-                Brak nadchodzących grań
+                Brak nadchodzących gierek
               </div>
             ) : (
               <div className="divide-y">
@@ -282,6 +285,31 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+
+          {/* Ujemne bilanse alert */}
+          {stats.lowBalancePlayers.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+              <div className="px-5 py-3 border-b bg-red-50">
+                <h2 className="font-semibold text-red-800 text-sm">
+                  ⚠️ Gracze z ujemnym bilansem
+                </h2>
+              </div>
+              <div className="divide-y">
+                {stats.lowBalancePlayers.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/admin/players/${p.id}`}
+                    className="flex items-center justify-between px-5 py-2.5 hover:bg-gray-50"
+                  >
+                    <span className="font-medium text-sm">{p.name}</span>
+                    <span className="text-red-600 font-semibold text-sm">
+                      {formatMoney(p.balance)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
         </div>
       )}
@@ -323,7 +351,7 @@ export default function AdminDashboard() {
           <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
             {(
               [
-                { key: "upcoming", label: `Grania (${upcomingGames.length})` },
+                { key: "upcoming", label: `Gierki (${upcomingGames.length})` },
                 { key: "history", label: `Historia (${pastGames.length})` },
                 { key: "balance", label: `Bilans (${payments.length})` },
               ] as { key: PlayerTab; label: string }[]
@@ -373,7 +401,7 @@ function UpcomingGames({
   if (games.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border p-8 text-center text-gray-500 text-sm">
-        Brak nadchodzących grań
+        Brak nadchodzących gierek
       </div>
     );
   }

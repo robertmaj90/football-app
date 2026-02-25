@@ -20,7 +20,7 @@ const sections: Section[] = [
     content: (
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
-          Aplikacja do zarządzania graniami w piłkę nożną. Umożliwia organizowanie
+          Aplikacja do zarządzania gierkami w piłkę nożną. Umożliwia organizowanie
           meczów, zarządzanie zapisami graczy oraz rozliczeniami finansowymi.
         </p>
         <p>
@@ -38,14 +38,14 @@ const sections: Section[] = [
     content: (
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
-          <strong>Harmonogram</strong> to szablon powtarzającego się grania.
+          <strong>Harmonogram</strong> to szablon powtarzającego się gierki.
           Określa dzień tygodnia, godzinę, lokalizację, maksymalną liczbę graczy
-          i cenę za granie.
+          i cenę za gierkę.
         </p>
         <p>Przykład: &quot;Wtorki 20:00, Orlik Mokotów, 14 graczy, 280 zł&quot;</p>
         <p>
-          Harmonogram nie tworzy automatycznie grań — służy jako szablon.
-          Kiedy tworzysz nowe granie i wybierzesz harmonogram, dane (lokalizacja,
+          Harmonogram nie tworzy automatycznie gierek — służy jako szablon.
+          Kiedy tworzysz nową gierkę i wybierzesz harmonogram, dane (lokalizacja,
           cena, max graczy) zostaną automatycznie uzupełnione.
         </p>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
@@ -60,25 +60,25 @@ const sections: Section[] = [
   },
   {
     id: "games",
-    title: "Grania",
+    title: "Gierki",
     icon: "⚽",
     audience: "admin",
     content: (
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
-          <strong>Granie</strong> to konkretny mecz z ustaloną datą. Tworzy się
+          <strong>Gierka</strong> to konkretny mecz z ustaloną datą. Tworzy się
           go na podstawie harmonogramu.
         </p>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="font-medium text-green-800">Jak stworzyć granie:</p>
+          <p className="font-medium text-green-800">Jak stworzyć gierkę:</p>
           <p className="mt-1">
-            Przejdź do zakładki <strong>Grania</strong> → kliknij{" "}
-            <strong>+ Nowe granie</strong> → wybierz harmonogram (data
+            Przejdź do zakładki <strong>Gierki</strong> → kliknij{" "}
+            <strong>+ Nowa gierka</strong> → wybierz harmonogram (data
             zostanie podpowiedziana automatycznie) → kliknij{" "}
-            <strong>Utwórz granie</strong>.
+            <strong>Utwórz gierkę</strong>.
           </p>
         </div>
-        <p className="font-medium">Statusy grania:</p>
+        <p className="font-medium">Statusy gierki:</p>
         <ul className="space-y-1.5 ml-1">
           <li className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
@@ -106,7 +106,7 @@ const sections: Section[] = [
           </li>
         </ul>
         <p>
-          Na liście grań możesz filtrować po statusach używając <strong>pastylkowych przycisków</strong> na górze.
+          Na liście gierek możesz filtrować po statusach używając <strong>pastylkowych przycisków</strong> na górze.
           Domyślnie widoczne są Otwarte i Zamknięte.
         </p>
       </div>
@@ -114,13 +114,13 @@ const sections: Section[] = [
   },
   {
     id: "signups",
-    title: "Zapisy na granie",
+    title: "Zapisy na gierkę",
     icon: "✍️",
     audience: "both",
     content: (
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
-          Kiedy granie ma status <strong>Otwarte</strong>, gracze mogą się
+          Kiedy gierka ma status <strong>Otwarte</strong>, gracze mogą się
           zapisywać i wypisywać.
         </p>
         <p>
@@ -132,13 +132,13 @@ const sections: Section[] = [
           <p className="font-medium text-blue-800">Jako gracz:</p>
           <p className="mt-1">
             W panelu gracza (Dashboard → Panel gracza) widzisz nadchodzące
-            grania. Kliknij <strong>Zapisz się</strong> / <strong>Wypisz się</strong>.
+            gierki. Kliknij <strong>Zapisz się</strong> / <strong>Wypisz się</strong>.
           </p>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <p className="font-medium text-green-800">Jako admin:</p>
           <p className="mt-1">
-            Na stronie szczegółów grania możesz ręcznie dodawać i usuwać
+            Na stronie szczegółów gierki możesz ręcznie dodawać i usuwać
             graczy z listy, zmieniać kolejność, oraz zarządzać rezerwą.
           </p>
         </div>
@@ -189,7 +189,7 @@ const sections: Section[] = [
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
           Każdy gracz ma <strong>bilans</strong> (w PLN). Wpłaty zwiększają
-          bilans, opłaty za grania go zmniejszają.
+          bilans, opłaty za gierki go zmniejszają.
         </p>
         <p className="font-medium">Typy transakcji:</p>
         <ul className="space-y-1 ml-1">
@@ -198,7 +198,7 @@ const sections: Section[] = [
             gotówka)
           </li>
           <li>
-            <strong>⚽ Opłata za granie</strong> — automatycznie naliczana
+            <strong>⚽ Opłata za gierkę</strong> — automatycznie naliczana
             przy rozliczeniu meczu
           </li>
           <li>
@@ -216,7 +216,7 @@ const sections: Section[] = [
             opcjonalny opis.
           </p>
           <p className="mt-1">
-            Wpłaty/zwroty można też dodawać z poziomu szczegółów grania —
+            Wpłaty/zwroty można też dodawać z poziomu szczegółów gierki —
             ikona 💰 przy każdym zapisanym graczu.
           </p>
         </div>
@@ -231,14 +231,14 @@ const sections: Section[] = [
     content: (
       <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
         <p>
-          Po meczu admin rozlicza granie — zmienia status na{" "}
-          <strong>Rozliczone</strong>. Koszt grania jest dzielony równo między
+          Po meczu admin rozlicza gierkę — zmienia status na{" "}
+          <strong>Rozliczone</strong>. Koszt gierki jest dzielony równo między
           obecnych graczy i automatycznie potrącany z ich bilansów.
         </p>
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <p className="font-medium text-green-800">Jak rozliczyć:</p>
           <p className="mt-1">
-            Otwórz szczegóły grania → oznacz kto był obecny → zmień status na{" "}
+            Otwórz szczegóły gierki → oznacz kto był obecny → zmień status na{" "}
             <strong>Rozliczone</strong>. System automatycznie podzieli koszt i
             obciąży bilanse graczy.
           </p>
@@ -258,10 +258,10 @@ const sections: Section[] = [
         </p>
         <ul className="space-y-1 ml-1">
           <li>
-            <strong>Grania</strong> — nadchodzące mecze, zapisz się / wypisz się
+            <strong>Gierki</strong> — nadchodzące mecze, zapisz się / wypisz się
           </li>
           <li>
-            <strong>Historia</strong> — przeszłe grania, czy byłeś obecny,
+            <strong>Historia</strong> — przeszłe gierki, czy byłeś obecny,
             ile zapłaciłeś
           </li>
           <li>
@@ -286,11 +286,11 @@ const sections: Section[] = [
         <p>System ma dwie role:</p>
         <ul className="space-y-1 ml-1">
           <li>
-            <strong>Gracz</strong> — może się zapisywać na grania, przeglądać
+            <strong>Gracz</strong> — może się zapisywać na gierki, przeglądać
             swój bilans i historię
           </li>
           <li>
-            <strong>Admin</strong> — zarządza harmonogramami, graniami, graczami
+            <strong>Admin</strong> — zarządza harmonogramami, gierkami, graczami
             i finansami
           </li>
         </ul>
@@ -319,7 +319,7 @@ export default function HelpPage() {
       <div>
         <h1 className="text-2xl font-bold">Pomoc</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Instrukcja obsługi aplikacji do zarządzania graniami
+          Instrukcja obsługi aplikacji do zarządzania gierkami
         </p>
       </div>
 

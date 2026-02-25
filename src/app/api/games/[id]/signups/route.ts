@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/games/:id/signups - zapisz gracza na granie
+// POST /api/games/:id/signups - zapisz gracza na gierkę
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -16,7 +16,7 @@ export async function POST(
   const body = await req.json();
   const userId = body.userId || session.user.id;
 
-  // Sprawdź czy granie istnieje i jest otwarte
+  // Sprawdź czy gierka istnieje i jest otwarte
   const game = await prisma.game.findUnique({
     where: { id: params.id },
     include: { signups: { orderBy: { position: "asc" } } },
@@ -24,7 +24,7 @@ export async function POST(
 
   if (!game || game.status !== "OPEN") {
     return NextResponse.json(
-      { error: "Granie nie jest otwarte" },
+      { error: "Gierka nie jest otwarte" },
       { status: 400 }
     );
   }
@@ -69,7 +69,7 @@ export async function DELETE(
 
   if (!game || game.status !== "OPEN") {
     return NextResponse.json(
-      { error: "Granie nie jest otwarte" },
+      { error: "Gierka nie jest otwarte" },
       { status: 400 }
     );
   }

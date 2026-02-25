@@ -5,12 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatMoney, formatDate, parseMoneyToGrosze } from "@/lib/utils";
 
-
 interface Signup {
   id: string;
   position: number;
   isReserve: boolean;
-  attended: "UNKNOWN" | "PRESENT" | "ABSENT";
   charged: boolean;
   user: { id: string; name: string; phone: string; balance: number };
 }
@@ -44,7 +42,13 @@ export default function GameDetailPage() {
   const [searchLeft, setSearchLeft] = useState("");
   const [searchRight, setSearchRight] = useState("");
 
-  // Wpłata / Zwrot z poziomu grania
+  // Checkboxy płatności — Set z userId osób które płacą
+  const [payingIds, setPayingIds] = useState<Set<string>>(new Set());
+
+  // Modal potwierdzenia rozliczenia
+  const [showSettleModal, setShowSettleModal] = useState(false);
+
+  // Wpłata / Zwrot z poziomu gierki
   const [depositPlayerId, setDepositPlayerId] = useState<string | null>(null);
   const [depositPlayerName, setDepositPlayerName] = useState("");
   const [depositPlayerBalance, setDepositPlayerBalance] = useState(0);
@@ -56,7 +60,11 @@ export default function GameDetailPage() {
   async function loadGame() {
     const res = await fetch(`/api/games/${params.id}`);
     if (res.ok) {
-      setGame(await res.json());
+      const data: Game = await res.json();
+      setGame(data);
+      // Domyślnie wszyscy z głównej listy płacą (chyba że już rozliczeni)
+      const mainNotCharged = data.signups.filter((s) => !s.isReserve && !s.charged);
+      setPayingIds(new Set(mainNotCharged.map((s) => s.user.id)));
     }
     setLoading(false);
   }
@@ -73,25 +81,34 @@ export default function GameDetailPage() {
     loadPlayers();
   }, [params.id]);
 
-  async function toggleAttendance(
-    signupId: string,
-    current: string,
-    next: string
-  ) {
-    await fetch(`/api/games/${params.id}/attendance`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ signupId, attended: next }),
+  function togglePaying(userId: string) {
+    setPayingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
     });
-    loadGame();
+  }
+
+  function selectAllPaying() {
+    if (!game) return;
+    const mainNotCharged = game.signups.filter((s) => !s.isReserve && !s.charged);
+    setPayingIds(new Set(mainNotCharged.map((s) => s.user.id)));
+  }
+
+  function deselectAllPaying() {
+    setPayingIds(new Set());
   }
 
   async function handleSettle() {
-    if (!confirm("Czy na pewno chcesz rozliczyć to granie? Gracze oznaczeni jako OBECNI i NIEOBECNI zostaną obciążeni.")) return;
-
     setSettling(true);
     const res = await fetch(`/api/games/${params.id}/settle`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payingUserIds: Array.from(payingIds) }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -102,6 +119,7 @@ export default function GameDetailPage() {
       alert(data.error);
     }
     setSettling(false);
+    setShowSettleModal(false);
     loadGame();
   }
 
@@ -171,7 +189,7 @@ export default function GameDetailPage() {
   }
 
   if (!game) {
-    return <div className="p-8 text-center text-red-500">Granie nie znalezione</div>;
+    return <div className="p-8 text-center text-red-500">Gierka nie znaleziona</div>;
   }
 
   const mainList = game.signups.filter((s) => !s.isReserve);
@@ -205,12 +223,44 @@ export default function GameDetailPage() {
   const filteredReserve = filteredSignups.filter((s) => s.isReserve);
 
   const canEdit = game.status === "OPEN" || game.status === "LOCKED";
+  const isLocked = game.status === "LOCKED";
+
+  // Oblicz koszt per gracz na podstawie zaznaczonych
+  const payingCount = payingIds.size;
+  const perPlayer = payingCount > 0 ? Math.floor(game.pricePerGame / payingCount) : 0;
+  const perPlayerRemainder = payingCount > 0 ? game.pricePerGame - perPlayer * payingCount : 0;
+
+  // Lista płacących do modala — z dowolnego źródła
+  const allPayingPlayers: { id: string; name: string; balance: number; source: string }[] = [];
+  for (const userId of payingIds) {
+    // Najpierw szukaj w signupach
+    const signup = game.signups.find((s) => s.user.id === userId);
+    if (signup) {
+      allPayingPlayers.push({
+        id: userId,
+        name: signup.user.name,
+        balance: signup.user.balance,
+        source: signup.isReserve ? "Rezerwowy" : "Lista",
+      });
+    } else {
+      // Szukaj w dostępnych graczach
+      const player = players.find((p) => p.id === userId);
+      if (player) {
+        allPayingPlayers.push({
+          id: userId,
+          name: player.name,
+          balance: 0, // nie mamy balance z listy graczy
+          source: "Niezapisany",
+        });
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <Link href="/admin/games" className="hover:text-green-700">
-          Grania
+          Gierki
         </Link>
         <span>/</span>
         <span>{formatDate(game.date)}</span>
@@ -227,17 +277,19 @@ export default function GameDetailPage() {
               {game.schedule.time}
             </div>
             <div className="text-sm text-gray-500">
-              Koszt grania: {formatMoney(game.pricePerGame)} • Max:{" "}
+              Koszt gierki: {formatMoney(game.pricePerGame)} • Max:{" "}
               {game.maxPlayers} graczy
             </div>
             <div className="text-sm font-medium text-green-700 mt-1">
               💰 Per gracz: {formatMoney(
-                mainList.length > 0
-                  ? Math.round(game.pricePerGame / mainList.length)
+                isLocked && payingCount > 0
+                  ? perPlayer
+                  : mainList.length > 0
+                  ? Math.floor(game.pricePerGame / mainList.length)
                   : game.pricePerGame
               )}{" "}
               <span className="text-gray-400 font-normal">
-                ({mainList.length > 0 ? mainList.length : "?"} graczy)
+                ({isLocked ? payingCount : mainList.length > 0 ? mainList.length : "?"} graczy)
               </span>
             </div>
           </div>
@@ -264,11 +316,11 @@ export default function GameDetailPage() {
                   Otwórz zapisy
                 </button>
                 <button
-                  onClick={handleSettle}
-                  disabled={settling}
+                  onClick={() => setShowSettleModal(true)}
+                  disabled={payingCount === 0}
                   className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {settling ? "Rozliczanie..." : "💰 Rozlicz granie"}
+                  💰 Rozlicz gierkę ({payingCount})
                 </button>
               </>
             )}
@@ -283,6 +335,72 @@ export default function GameDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal potwierdzenia rozliczenia */}
+      {showSettleModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="font-semibold text-lg mb-1">💰 Potwierdź rozliczenie</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Koszt gierki: <strong>{formatMoney(game.pricePerGame)}</strong> ÷{" "}
+              <strong>{payingCount} graczy</strong> ={" "}
+              <strong className="text-blue-700">{formatMoney(perPlayer)}/os</strong>
+              {perPlayerRemainder > 0 && (
+                <span className="text-xs text-gray-400 ml-1">
+                  (+1 gr dla {perPlayerRemainder} {perPlayerRemainder === 1 ? "gracza" : "graczy"})
+                </span>
+              )}
+            </p>
+
+            <div className="border rounded-lg overflow-hidden mb-4">
+              <div className="px-4 py-2 bg-blue-50 border-b">
+                <span className="text-sm font-medium text-blue-800">
+                  Płacą za gierkę ({payingCount}):
+                </span>
+              </div>
+              <div className="divide-y max-h-60 overflow-y-auto">
+                {allPayingPlayers.map((p, i) => {
+                  const playerCost = perPlayer + (i < perPlayerRemainder ? 1 : 0);
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between px-4 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{p.name}</span>
+                        {p.source !== "Lista" && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                            {p.source}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-blue-700 font-semibold">
+                        -{formatMoney(playerCost)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleSettle}
+                disabled={settling}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
+                {settling ? "Rozliczanie..." : "Potwierdź rozliczenie"}
+              </button>
+              <button
+                onClick={() => setShowSettleModal(false)}
+                className="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal wpłaty / zwrotu */}
       {depositPlayerId && (
@@ -302,7 +420,6 @@ export default function GameDetailPage() {
               </span>
             </p>
             <form onSubmit={submitDeposit} className="space-y-3">
-              {/* Przełącznik Wpłata / Zwrot */}
               <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                 <button
                   type="button"
@@ -351,7 +468,7 @@ export default function GameDetailPage() {
                   type="text"
                   placeholder={
                     depositType === "REFUND"
-                      ? "np. Zwrot za odwołane granie"
+                      ? "np. Zwrot za odwołaną gierkę"
                       : "np. Przelew, Gotówka"
                   }
                   value={depositDesc}
@@ -418,11 +535,24 @@ export default function GameDetailPage() {
                 filteredAvailable.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center justify-between px-5 py-2.5 hover:bg-gray-50 group"
+                    className={`flex items-center justify-between px-5 py-2.5 hover:bg-gray-50 group ${
+                      isLocked && payingIds.has(p.id) ? "bg-blue-50" : ""
+                    }`}
                   >
-                    <div>
-                      <div className="font-medium text-sm">{p.name}</div>
-                      <div className="text-xs text-gray-400">{p.phone}</div>
+                    <div className="flex items-center gap-3">
+                      {isLocked && (
+                        <input
+                          type="checkbox"
+                          checked={payingIds.has(p.id)}
+                          onChange={() => togglePaying(p.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          title="Dodaj do płatności"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium text-sm">{p.name}</div>
+                        <div className="text-xs text-gray-400">{p.phone}</div>
+                      </div>
                     </div>
                     <button
                       onClick={() => addPlayer(p.id)}
@@ -458,10 +588,29 @@ export default function GameDetailPage() {
 
           {/* Lista główna */}
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-            <div className="px-5 py-3 border-b bg-green-50">
+            <div className="px-5 py-3 border-b bg-green-50 flex items-center justify-between">
               <h2 className="font-semibold text-green-800">
                 ⚽ Lista ({mainList.length}/{game.maxPlayers})
               </h2>
+              {isLocked && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">
+                    Płaci: {payingCount}/{mainList.filter((s) => !s.charged).length}
+                  </span>
+                  <button
+                    onClick={selectAllPaying}
+                    className="text-xs text-green-700 hover:underline"
+                  >
+                    Wszyscy
+                  </button>
+                  <button
+                    onClick={deselectAllPaying}
+                    className="text-xs text-red-600 hover:underline"
+                  >
+                    Żaden
+                  </button>
+                </div>
+              )}
             </div>
             {filteredMain.length === 0 ? (
               <div className="p-6 text-center text-gray-500 text-sm">
@@ -474,7 +623,8 @@ export default function GameDetailPage() {
                     key={s.id}
                     signup={s}
                     gameStatus={game.status}
-                    onToggleAttendance={toggleAttendance}
+                    isPaying={payingIds.has(s.user.id)}
+                    onTogglePaying={() => togglePaying(s.user.id)}
                     onRemove={removePlayer}
                     onDeposit={startDeposit}
                   />
@@ -502,7 +652,8 @@ export default function GameDetailPage() {
                       key={s.id}
                       signup={s}
                       gameStatus={game.status}
-                      onToggleAttendance={toggleAttendance}
+                      isPaying={payingIds.has(s.user.id)}
+                      onTogglePaying={() => togglePaying(s.user.id)}
                       onRemove={removePlayer}
                       onDeposit={startDeposit}
                     />
@@ -520,35 +671,34 @@ export default function GameDetailPage() {
 function SignupRow({
   signup,
   gameStatus,
-  onToggleAttendance,
+  isPaying,
+  onTogglePaying,
   onRemove,
   onDeposit,
 }: {
   signup: Signup;
   gameStatus: string;
-  onToggleAttendance: (id: string, current: string, next: string) => void;
+  isPaying: boolean;
+  onTogglePaying: () => void;
   onRemove: (userId: string) => void;
   onDeposit: (userId: string, name: string, balance: number) => void;
 }) {
-  const attendColors = {
-    UNKNOWN: "bg-gray-100 text-gray-600",
-    PRESENT: "bg-green-100 text-green-700",
-    ABSENT: "bg-red-100 text-red-700",
-  };
-  const attendLabels = {
-    UNKNOWN: "❓",
-    PRESENT: "✅ Był",
-    ABSENT: "❌ Nie był",
-  };
-  const nextAttend: Record<string, string> = {
-    UNKNOWN: "PRESENT",
-    PRESENT: "ABSENT",
-    ABSENT: "UNKNOWN",
-  };
+  const isLocked = gameStatus === "LOCKED";
 
   return (
-    <div className="flex items-center justify-between px-5 py-2.5">
+    <div className={`flex items-center justify-between px-5 py-2.5 ${
+      isLocked && !isPaying && !signup.charged ? "opacity-40" : ""
+    }`}>
       <div className="flex items-center gap-3">
+        {/* Checkbox płatności — tylko w LOCKED i nie rozliczony */}
+        {isLocked && !signup.charged && (
+          <input
+            type="checkbox"
+            checked={isPaying}
+            onChange={onTogglePaying}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+        )}
         <span className="text-sm text-gray-400 w-6 text-right">
           {signup.position}.
         </span>
@@ -578,23 +728,6 @@ function SignupRow({
           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
             Rozliczony
           </span>
-        )}
-        {(gameStatus === "LOCKED" || gameStatus === "COMPLETED") && (
-          <button
-            onClick={() =>
-              onToggleAttendance(
-                signup.id,
-                signup.attended,
-                nextAttend[signup.attended]
-              )
-            }
-            className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-              attendColors[signup.attended]
-            }`}
-            disabled={gameStatus === "COMPLETED"}
-          >
-            {attendLabels[signup.attended]}
-          </button>
         )}
         {(gameStatus === "OPEN" || gameStatus === "LOCKED") && (
           <button

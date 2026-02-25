@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/players/:id/games - historia grań gracza
+// GET /api/players/:id/games - historia gierek gracza
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }

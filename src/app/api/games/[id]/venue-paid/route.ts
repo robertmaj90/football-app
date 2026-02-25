@@ -1,0 +1,30 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+// PATCH /api/games/[id]/venue-paid - toggle venuePaid
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user.roles?.includes("ADMIN")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const game = await prisma.game.findUnique({ where: { id: params.id } });
+  if (!game) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const body = await req.json();
+  const venuePaid = Boolean(body.venuePaid);
+
+  const updated = await prisma.game.update({
+    where: { id: params.id },
+    data: { venuePaid },
+  });
+
+  return NextResponse.json({ venuePaid: updated.venuePaid });
+}
